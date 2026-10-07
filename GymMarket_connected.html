@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GymMarket — UK Gym Equipment Marketplace</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--green:#18b96b;--dark:#07140e;--ink:#132019;--muted:#6d7a73;--bg:#f5f8f6;--card:#fff;--line:#e2e9e5}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--dark);color:#fff;position:sticky;top:0;z-index:10}.nav{max-width:1180px;margin:auto;display:flex;gap:18px;align-items:center;padding:15px 20px}.logo{font-size:25px;font-weight:900;color:#fff}.logo span{color:var(--green)}.search{flex:1;display:flex;background:#fff;border-radius:12px;overflow:hidden}.search input{border:0;outline:0;padding:12px 14px;flex:1;font-size:15px}.search button{border:0;background:var(--green);color:#fff;padding:0 18px;font-weight:800}.nav button{border:1px solid #385045;background:transparent;color:#fff;border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer}.nav .sell{background:var(--green);border-color:var(--green)}
+.hero{background:linear-gradient(120deg,#07140e,#123b27);color:#fff}.hero-inner{max-width:1180px;margin:auto;padding:55px 20px 60px}.hero h1{font-size:clamp(36px,6vw,64px);line-height:.98;margin:0 0 16px;max-width:720px}.hero p{font-size:18px;color:#d8e5de;max-width:620px}.wrap{max-width:1180px;margin:auto;padding:28px 20px}.cats{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 28px}.cat{background:#fff;border:1px solid var(--line);border-radius:999px;padding:10px 15px;cursor:pointer;font-weight:700}.cat:hover{border-color:var(--green)}.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 5px 18px #10261a0b}.pic{height:190px;background:#e8efeb;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}.pic img{width:100%;height:100%;object-fit:cover}.heart{position:absolute;right:10px;top:10px;width:38px;height:38px;border:0;border-radius:50%;background:#fff;cursor:pointer;font-size:20px}.body{padding:15px}.title{font-weight:800;font-size:17px}.price{font-size:22px;font-weight:900;margin-top:8px}.meta{color:var(--muted);font-size:13px;margin-top:5px}.empty{padding:45px;text-align:center;background:#fff;border:1px dashed #cbd8d0;border-radius:16px;color:var(--muted)}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:18px;z-index:30}.modal.open{display:flex}.box{background:#fff;width:min(620px,100%);max-height:92vh;overflow:auto;border-radius:18px;padding:22px}.box h2{margin-top:0}.close{float:right;border:0;background:#eef3ef;border-radius:9px;padding:7px 10px;cursor:pointer}.form{display:grid;gap:12px}.form input,.form textarea,.form select{width:100%;padding:12px;border:1px solid #d6e0da;border-radius:10px;font:inherit}.form textarea{min-height:110px}.primary{background:var(--green);border:0;color:#fff;border-radius:10px;padding:13px;font-weight:900;cursor:pointer}.secondary{background:#eef3ef;border:0;border-radius:10px;padding:13px;font-weight:800;cursor:pointer}.notice{padding:12px;border-radius:10px;background:#eef8f2;margin-bottom:12px}.account{font-size:13px;color:#d8e5de}.message-list{display:grid;gap:8px;max-height:280px;overflow:auto}.msg{padding:10px;border-radius:10px;background:#f0f4f2}.right{display:flex;justify-content:flex-end}.right .msg{background:#dff7e9}footer{padding:40px 20px;text-align:center;color:var(--muted)}
+@media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.nav{flex-wrap:wrap}.search{order:3;flex-basis:100%}.grid{grid-template-columns:1fr}.hero-inner{padding:42px 20px}.nav button{padding:9px 10px}}
+</style>
+</head>
+<body>
+<header><div class="nav">
+  <div class="logo">Gym<span>Market</span></div>
+  <div class="search"><input id="search" placeholder="Search gym equipment…"><button onclick="loadListings()">Search</button></div>
+  <span class="account" id="account">Not signed in</span>
+  <button onclick="openAuth()">Sign in</button>
+  <button class="sell" onclick="openSell()">+ Sell</button>
+</div></header>
+
+<section class="hero"><div class="hero-inner"><h1>Buy & sell gym equipment in the UK.</h1><p>GymMarket is a dedicated marketplace for weights, machines, cardio equipment and everything you need to build a better gym.</p><button class="primary" onclick="openSell()">Sell your equipment</button></div></section>
+
+<main class="wrap">
+  <div class="cats">
+    <button class="cat" onclick="setCategory('')">All</button>
+    <button class="cat" onclick="setCategory('Weights')">Weights</button>
+    <button class="cat" onclick="setCategory('Cardio')">Cardio</button>
+    <button class="cat" onclick="setCategory('Machines')">Machines</button>
+    <button class="cat" onclick="setCategory('Benches')">Benches</button>
+    <button class="cat" onclick="setCategory('Accessories')">Accessories</button>
+  </div>
+  <div class="section-head"><h2>Latest equipment</h2><button class="secondary" onclick="showSaved()">♥ Favourites</button></div>
+  <div id="grid" class="grid"></div>
+</main>
+
+<div id="authModal" class="modal"><div class="box"><button class="close" onclick="closeModal('authModal')">✕</button><h2 id="authTitle">Sign in</h2><div class="form">
+<input id="authEmail" type="email" placeholder="Email">
+<input id="authPassword" type="password" placeholder="Password">
+<input id="authName" placeholder="Your name (sign up only)">
+<button class="primary" onclick="authAction()" id="authBtn">Sign in</button>
+<button class="secondary" onclick="toggleAuth()">Create an account</button>
+<div id="authMsg"></div></div></div></div>
+
+<div id="sellModal" class="modal"><div class="box"><button class="close" onclick="closeModal('sellModal')">✕</button><h2>Sell equipment</h2><div class="form">
+<input id="title" placeholder="Listing title">
+<select id="category"><option>Weights</option><option>Cardio</option><option>Machines</option><option>Benches</option><option>Accessories</option></select>
+<input id="price" type="number" min="0" step="0.01" placeholder="Price (£)">
+<select id="condition"><option>Used - good</option><option>Used - excellent</option><option>New</option><option>For parts</option></select>
+<input id="location" placeholder="Location, e.g. Manchester">
+<textarea id="description" placeholder="Describe the equipment"></textarea>
+<input id="image" type="file" accept="image/*">
+<button class="primary" onclick="addListing()">Publish listing</button><div id="sellMsg"></div></div></div></div>
+
+<div id="msgModal" class="modal"><div class="box"><button class="close" onclick="closeModal('msgModal')">✕</button><h2>Message seller</h2><div id="messages" class="message-list"></div><div class="form" style="margin-top:12px"><textarea id="messageBody" placeholder="Ask the seller a question…"></textarea><button class="primary" onclick="sendMessage()">Send message</button></div></div></div>
+
+<footer>© 2026 GymMarket · UK gym equipment marketplace</footer>
+
+<script>
+const SUPABASE_URL = "https://dghildpzdqdwfvmrnubj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_g-RYqeCBQGbohZyPdDGSKQ_gYmG3CS5";
+const {createClient}=supabase;
+const db=createClient(SUPABASE_URL,SUPABASE_KEY);
+let user=null, category='', messageListing=null;
+
+const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+const money=n=>new Intl.NumberFormat('en-GB',{style:'currency',currency:'GBP'}).format(n);
+
+async function init(){
+ const {data}=await db.auth.getUser(); user=data.user||null; updateAccount(); await loadListings();
+ db.auth.onAuthStateChange((_e,session)=>{user=session?.user||null; updateAccount(); loadListings();});
+}
+function updateAccount(){document.getElementById('account').textContent=user?`Signed in: ${user.email}`:'Not signed in'}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+function toastMsg(el,msg){el.innerHTML='<div class="notice">'+esc(msg)+'</div>'}
+
+async function loadListings(){
+ const q=document.getElementById('search').value.trim().toLowerCase();
+ let query=db.from('listings').select('id,seller_id,title,description,category,price,condition,location,image_url,status,created_at').eq('status','active').order('created_at',{ascending:false});
+ if(category) query=query.eq('category',category);
+ const {data,error}=await query;
+ const grid=document.getElementById('grid');
+ if(error){grid.innerHTML='<div class="empty">Could not load listings.</div>';return}
+ const rows=(data||[]).filter(x=>!q || `${x.title} ${x.description} ${x.category} ${x.location}`.toLowerCase().includes(q));
+ if(!rows.length){grid.innerHTML='<div class="empty">No equipment found yet. Be the first to sell something!</div>';return}
+ let favs=new Set();
+ if(user){const f=await db.from('favourites').select('listing_id').eq('user_id',user.id);(f.data||[]).forEach(x=>favs.add(x.listing_id))}
+ grid.innerHTML=rows.map(x=>`<article class="card">
+ <div class="pic">${x.image_url?`<img src="${esc(x.image_url)}" alt="">`:'🏋️' }<button class="heart" onclick="toggleFav('${x.id}',event)">${favs.has(x.id)?'♥':'♡'}</button></div>
+ <div class="body"><div class="title">${esc(x.title)}</div><div class="price">${money(x.price)}</div><div class="meta">${esc(x.condition)} · ${esc(x.location||'UK')}</div><div class="meta">${esc(x.category)}</div>
+ <div style="display:flex;gap:8px;margin-top:12px"><button class="secondary" onclick="contactSeller('${x.id}','${x.seller_id}')">Message seller</button></div></div></article>`).join('');
+}
+function setCategory(c){category=c;loadListings()}
+function showSaved(){if(!user){openAuth();return}category='';document.getElementById('search').value='';loadSaved()}
+async function loadSaved(){
+ const {data:f}=await db.from('favourites').select('listing_id').eq('user_id',user.id);
+ if(!f?.length){document.getElementById('grid').innerHTML='<div class="empty">You have no favourites yet.</div>';return}
+ const ids=f.map(x=>x.listing_id);const {data}=await db.from('listings').select('*').in('id',ids);
+ const grid=document.getElementById('grid');grid.innerHTML=(data||[]).map(x=>`<article class="card"><div class="pic">${x.image_url?`<img src="${esc(x.image_url)}">`:'🏋️'}</div><div class="body"><div class="title">${esc(x.title)}</div><div class="price">${money(x.price)}</div><div class="meta">${esc(x.location||'UK')}</div></div></article>`).join('');
+}
+async function toggleFav(id,e){e.stopPropagation();if(!user){openAuth();return}const {data}=await db.from('favourites').select('listing_id').eq('user_id',user.id).eq('listing_id',id).maybeSingle();if(data) await db.from('favourites').delete().eq('user_id',user.id).eq('listing_id',id);else await db.from('favourites').insert({user_id:user.id,listing_id:id});loadListings()}
+function openAuth(){openModal('authModal')}
+let signUp=false;
+function toggleAuth(){signUp=!signUp;document.getElementById('authTitle').textContent=signUp?'Create account':'Sign in';document.getElementById('authBtn').textContent=signUp?'Create account':'Sign in';document.getElementById('authName').style.display=signUp?'block':'none';}
+async function authAction(){
+ const email=document.getElementById('authEmail').value.trim(),password=document.getElementById('authPassword').value,name=document.getElementById('authName').value.trim(),msg=document.getElementById('authMsg');
+ if(!email||!password){toastMsg(msg,'Enter your email and password.');return}
+ let r;
+ if(signUp) r=await db.auth.signUp({email,password,options:{data:{full_name:name}}}); else r=await db.auth.signInWithPassword({email,password});
+ if(r.error){toastMsg(msg,r.error.message);return}
+ if(signUp && !r.data.session){toastMsg(msg,'Account created. Check your email to confirm it, then sign in.');return}
+ closeModal('authModal'); signUp=false;
+}
+async function signOut(){await db.auth.signOut()}
+function openSell(){if(!user){openAuth();return}openModal('sellModal')}
+async function addListing(){
+ const msg=document.getElementById('sellMsg');
+ if(!user){toastMsg(msg,'Please sign in first.');return}
+ const file=document.getElementById('image').files[0];let image_url=null;
+ if(file){const ext=(file.name.split('.').pop()||'jpg').toLowerCase(),path=`${user.id}/${crypto.randomUUID()}.${ext}`;const up=await db.storage.from('listing-images').upload(path,file,{upsert:false,contentType:file.type});if(up.error){toastMsg(msg,up.error.message);return}image_url=db.storage.from('listing-images').getPublicUrl(path).data.publicUrl}
+ const payload={seller_id:user.id,title:document.getElementById('title').value.trim(),description:document.getElementById('description').value.trim(),category:document.getElementById('category').value,price:Number(document.getElementById('price').value),condition:document.getElementById('condition').value,location:document.getElementById('location').value.trim(),image_url,status:'active'};
+ if(!payload.title||!payload.price){toastMsg(msg,'Add a title and price.');return}
+ const {error}=await db.from('listings').insert(payload);if(error){toastMsg(msg,error.message);return}
+ closeModal('sellModal');document.querySelectorAll('#sellModal input,#sellModal textarea').forEach(x=>x.value='');document.getElementById('image').value='';await loadListings();
+}
+async function contactSeller(listingId,sellerId){if(!user){openAuth();return}if(sellerId===user.id){alert('This is your own listing.');return}messageListing={listingId,sellerId};openModal('msgModal');await loadMessages()}
+async function loadMessages(){const box=document.getElementById('messages');const {data,error}=await db.from('messages').select('*').eq('listing_id',messageListing.listingId).or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`).order('created_at');if(error){box.innerHTML='<div class="empty">Could not load messages.</div>';return}box.innerHTML=(data||[]).map(m=>`<div class="${m.sender_id===user.id?'right':''}"><div class="msg">${esc(m.body)}</div></div>`).join('')||'<div class="meta">No messages yet.</div>'}
+async function sendMessage(){const body=document.getElementById('messageBody').value.trim();if(!body)return;const {error}=await db.from('messages').insert({listing_id:messageListing.listingId,sender_id:user.id,recipient_id:messageListing.sellerId,body});if(error){alert(error.message);return}document.getElementById('messageBody').value='';loadMessages()}
+init();
+</script>
+</body>
+</html>
